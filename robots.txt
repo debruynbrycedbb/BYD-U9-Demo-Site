@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://debruynbrycedbb.github.io/BYD-U9-Demo-Site/sitemap.xml

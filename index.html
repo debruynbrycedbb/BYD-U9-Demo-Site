@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BYD Yangwang U9 Xtreme | 496.22 km/h in 3D</title>
+  <meta name="description" content="Scroll around the BYD Yangwang U9 Xtreme in 3D: the 496.22 km/h production car top speed record, 1200V powertrain, 30C Blade Battery, four 30,000 rpm motors, active aero, semi-slick tyres and DiSus-X suspension.">
+  <meta name="theme-color" content="#000000">
+  <link rel="canonical" href="https://debruynbrycedbb.github.io/BYD-U9-Demo-Site/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BYD Yangwang U9 Xtreme | 496.22 km/h in 3D">
+  <meta property="og:description" content="Scroll around the record-setting Yangwang U9 Xtreme, from its 1200V powertrain to its active aero wing.">
+  <meta property="og:url" content="https://debruynbrycedbb.github.io/BYD-U9-Demo-Site/">
+  <meta property="og:image" content="https://debruynbrycedbb.github.io/BYD-U9-Demo-Site/assets/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preload" href="assets/fonts/michroma-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23000'/%3E%3Cpath d='M6 22 16 9l10 13' fill='none' stroke='%23e2242f' stroke-width='2.5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#record">Skip to the specs</a>
+
+  <!-- Fixed 3D stage. The poster is the loading image and the fallback without WebGL. -->
+  <div class="stage" aria-hidden="true">
+    <picture class="poster">
+      <source media="(max-aspect-ratio: 3/4)" srcset="assets/img/poster-mobile.webp">
+      <img src="assets/img/poster-desktop.webp" alt="" width="1920" height="1080" fetchpriority="high">
+    </picture>
+    <canvas id="scene"></canvas>
+  </div>
+
+  <div class="loader" role="status" aria-live="polite">
+    <span class="loader__label">Loading the U9</span>
+    <span class="loader__bar"><span class="loader__fill"></span></span>
+  </div>
+
+  <header class="top">
+    <div class="progress" aria-hidden="true"><span></span></div>
+    <nav class="nav nav--left" aria-label="Specs, part 1">
+      <a href="#record">Record</a>
+      <a href="#powertrain">Powertrain</a>
+      <a href="#battery">Battery</a>
+      <a href="#motors">Motors</a>
+    </nav>
+    <a class="wordmark" href="#top" aria-label="Yangwang U9 Xtreme, back to the start">
+      <svg viewBox="0 0 24 14" aria-hidden="true"><path d="M2 13 12 2l10 11"/></svg>
+      <span>U9 Xtreme</span>
+    </a>
+    <nav class="nav nav--right" aria-label="Specs, part 2">
+      <a href="#aero">Aero</a>
+      <a href="#tyres">Tyres</a>
+      <a href="#suspension">Suspension</a>
+    </nav>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
+  </header>
+
+  <div class="menu" id="menu" hidden>
+    <nav aria-label="Specs">
+      <ol>
+        <li><a href="#record"><span>01</span>Record</a></li>
+        <li><a href="#powertrain"><span>02</span>Powertrain</a></li>
+        <li><a href="#battery"><span>03</span>Battery</a></li>
+        <li><a href="#motors"><span>04</span>Motors</a></li>
+        <li><a href="#aero"><span>05</span>Aero</a></li>
+        <li><a href="#tyres"><span>06</span>Tyres</a></li>
+        <li><a href="#suspension"><span>07</span>Suspension</a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <main>
+    <section id="top" class="chapter chapter--hero" data-shot="hero">
+      <div class="panel panel--hero">
+        <h1><span class="h1-brand">BYD Yangwang</span> <span class="h1-model">U9 Xtreme</span></h1>
+        <p class="scroll-cue">Scroll to explore</p>
+      </div>
+    </section>
+
+    <section id="record" class="chapter" data-shot="record" aria-labelledby="record-h">
+      <div class="panel panel--record">
+        <p class="kicker"><span>01</span> Top speed</p>
+        <p class="stat" aria-hidden="true">496.22<small>km/h</small></p>
+        <h2 id="record-h">The global production car top speed record</h2>
+      </div>
+    </section>
+
+    <section id="powertrain" class="chapter" data-shot="powertrain" aria-labelledby="powertrain-h">
+      <div class="panel panel--right">
+        <p class="kicker"><span>02</span> Powertrain</p>
+        <p class="stat" aria-hidden="true">1200<small>V</small></p>
+        <h2 id="powertrain-h"><span class="nw">Ultra-high-voltage</span> electrics</h2>
+        <p>An upgraded powertrain built on 1200V ultra-high-voltage electrics.</p>
+      </div>
+    </section>
+
+    <section id="battery" class="chapter" data-shot="battery" aria-labelledby="battery-h">
+      <div class="panel panel--top">
+        <p class="kicker"><span>03</span> Battery</p>
+        <p class="stat" aria-hidden="true">30<small>C</small></p>
+        <h2 id="battery-h">Blade Battery discharge rate</h2>
+        <p>A lithium iron phosphate Blade Battery with a remarkable discharge rate of 30C.</p>
+      </div>
+    </section>
+
+    <section id="motors" class="chapter" data-shot="motors" aria-labelledby="motors-h">
+      <div class="panel panel--left">
+        <p class="kicker"><span>04</span> Motors</p>
+        <p class="stat" aria-hidden="true">30,000<small>rpm</small></p>
+        <h2 id="motors-h">Four <span class="nw">ultra-high-speed</span> motors</h2>
+        <p>Four ultra-high-speed motors, each operating at up to 30,000rpm.</p>
+      </div>
+    </section>
+
+    <section id="aero" class="chapter" data-shot="aero" aria-labelledby="aero-h">
+      <div class="panel panel--bottom">
+        <p class="kicker"><span>05</span> Aero</p>
+        <h2 id="aero-h" class="title">Active aero rear wing</h2>
+        <p>Maximum stability at high speed, and incredible downforce when cornering.</p>
+      </div>
+    </section>
+
+    <section id="tyres" class="chapter" data-shot="tyres" aria-labelledby="tyres-h">
+      <div class="panel panel--left">
+        <p class="kicker"><span>06</span> Tyres</p>
+        <h2 id="tyres-h" class="title"><span class="nw">Track-level</span> <span class="nw">semi-slick</span> tyres</h2>
+        <p>Semi-slick rubber for track-level grip.</p>
+      </div>
+    </section>
+
+    <section id="suspension" class="chapter" data-shot="suspension" aria-labelledby="suspension-h">
+      <div class="panel panel--top">
+        <p class="kicker"><span>07</span> Suspension</p>
+        <h2 id="suspension-h" class="title">Revised <span class="nw">DiSus-X</span> suspension</h2>
+        <p>Specific tuning to cope with the increased stresses of circuit driving.</p>
+      </div>
+    </section>
+
+    <section id="finale" class="chapter chapter--finale" data-shot="finale" aria-labelledby="finale-h">
+      <div class="panel panel--finale">
+        <h2 id="finale-h" class="visually-hidden">BYD Yangwang U9 Xtreme</h2>
+        <a class="btn" href="#top">Back to the start</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Independent design demo. Not affiliated with BYD or Yangwang.</p>
+    <p>3D model based on <a href="https://sketchfab.com/3d-models/2024-byd-yangwang-u9-9f9d82e405ca4382a1c9ff442f5862c2" rel="noopener">“2024 BYD Yangwang U9”</a> by <a href="https://sketchfab.com/ddiaz-design" rel="noopener">Ddiaz Design</a>, licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener">CC BY-NC-SA 4.0</a>. Recoloured and staged by Bryce de Bruyn.</p>
+  </footer>
+</body>
+</html>
