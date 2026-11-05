@@ -116,7 +116,7 @@ function start() {
   scene.add(camera);
 
   /* ---------- dim backdrop: lifts the horizon behind the car so its silhouette stands out */
-  scene.add(buildBackdrop());
+  scene.add(mainOnly(buildBackdrop()));
 
   /* ---------- soft fill on the rear-right wheel, only for the tyre close-up */
   const wheelFill = new THREE.PointLight(0xdfe6ff, 0, 6, 2);
@@ -128,10 +128,10 @@ function start() {
   scene.add(floor);
 
   /* ---------- contact shadow under the car */
-  scene.add(buildContactShadow());
+  scene.add(mainOnly(buildContactShadow()));
 
   /* ---------- haze beam */
-  const beam = buildBeam();
+  const beam = mainOnly(buildBeam());
   scene.add(beam);
 
   /* ---------- light bars that only show up as streaks in the wet floor (layer 1) */
@@ -354,6 +354,9 @@ function makeLightsGlow(m) {
   m.emissiveIntensity = 18.0;
   m.needsUpdate = true;
 }
+
+/* Layer 2: seen by the main camera only, never by the floor's reflection camera. */
+function mainOnly(obj) { obj.layers.set(2); return obj; }
 
 function buildBackdrop() {
   const geo = new THREE.CylinderGeometry(34, 34, 30, 64, 1, true);

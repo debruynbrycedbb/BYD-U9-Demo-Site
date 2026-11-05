@@ -56,10 +56,16 @@ export class WetFloor extends THREE.Mesh {
           vec3 refl = vec3(0.0); float wsum = 0.0;
           for (int i = 0; i < 12; i++){
             float o = (float(i)/11.0 - 0.5);
-            float w = 1.0 - abs(o)*1.2;
-            refl += texture2D(tReflect, uv + vec2(0.0, o*spread)).rgb * w; wsum += w;
+            vec2 suv = uv + vec2(0.0, o*spread);
+            // ignore samples that fall outside the reflection image (no edge smearing)
+            float inside = step(0.0, suv.x) * step(suv.x, 1.0) * step(0.0, suv.y) * step(suv.y, 1.0);
+            float w = (1.0 - abs(o)*1.2) * inside;
+            vec3 c = texture2D(tReflect, clamp(suv, 0.0, 1.0)).rgb;
+            // drop invalid values some GPUs can produce in half-float targets
+            if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+            refl += min(c, vec3(6.0)) * w; wsum += w;
           }
-          refl /= wsum;
+          refl = wsum > 0.0 ? refl / wsum : vec3(0.0);
 
           vec3 V = normalize(cameraPosition - vWorld);
           float fres = 0.04 + 0.96*pow(1.0 - clamp(V.y, 0.0, 1.0), 5.0);
@@ -90,12 +96,15 @@ export class WetFloor extends THREE.Mesh {
     const cameraWorldPosition = new THREE.Vector3();
     const rotationMatrix = new THREE.Matrix4();
     const lookAtPosition = new THREE.Vector3(0, 0, -1);
-    const clipPlane = new THREE.Vector4();
+    const worldClip = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const clipList = [worldClip];
     const view = new THREE.Vector3();
     const target = new THREE.Vector3();
-    const q = new THREE.Vector4();
     const virtualCamera = new THREE.PerspectiveCamera();
-    virtualCamera.layers.enable(1);   // sees the reflection-only light bars
+    // layer 0 = car and lights, layer 1 = reflection-only light bars.
+    // The beam, backdrop, contact shadow and title live on layer 2 (main camera only).
+    virtualCamera.layers.set(0);
+    virtualCamera.layers.enable(1);
 
     this.onBeforeRender = function (renderer, scene, camera) {
       reflectorWorldPosition.setFromMatrixPosition(scope.matrixWorld);
@@ -122,19 +131,12 @@ export class WetFloor extends THREE.Mesh {
       textureMatrix.multiply(virtualCamera.matrixWorldInverse);
       textureMatrix.multiply(scope.matrixWorld);
 
+      // Clip everything below the floor with a world-space clipping plane. (The usual
+      // oblique-projection trick skews the far plane and can leave straight-edged
+      // patches of wrong content on some GPUs.)
       reflectorPlane.setFromNormalAndCoplanarPoint(normal, reflectorWorldPosition);
-      reflectorPlane.applyMatrix4(virtualCamera.matrixWorldInverse);
-      clipPlane.set(reflectorPlane.normal.x, reflectorPlane.normal.y, reflectorPlane.normal.z, reflectorPlane.constant);
-      const pm = virtualCamera.projectionMatrix;
-      q.x = (Math.sign(clipPlane.x) + pm.elements[8]) / pm.elements[0];
-      q.y = (Math.sign(clipPlane.y) + pm.elements[9]) / pm.elements[5];
-      q.z = -1.0;
-      q.w = (1.0 + pm.elements[10]) / pm.elements[14];
-      clipPlane.multiplyScalar(2.0 / clipPlane.dot(q));
-      pm.elements[2] = clipPlane.x;
-      pm.elements[6] = clipPlane.y;
-      pm.elements[10] = clipPlane.z + 1.0 - 0.003;
-      pm.elements[14] = clipPlane.w;
+      worldClip.normal.copy(reflectorPlane.normal);
+      worldClip.constant = reflectorPlane.constant + 0.002;
 
       scope.visible = false;
       const currentRenderTarget = renderer.getRenderTarget();
@@ -142,10 +144,14 @@ export class WetFloor extends THREE.Mesh {
       const currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
       renderer.xr.enabled = false;
       renderer.shadowMap.autoUpdate = false;
+      const currentClipping = renderer.clippingPlanes;
       renderer.setRenderTarget(rt);
       renderer.state.buffers.depth.setMask(true);
-      if (renderer.autoClear === false) renderer.clear();
+      renderer.setClearColor(0x000000, 1);
+      renderer.clear(true, true, true);              // always start from a clean black image
+      renderer.clippingPlanes = clipList;
       renderer.render(scene, virtualCamera);
+      renderer.clippingPlanes = currentClipping;
       renderer.xr.enabled = currentXrEnabled;
       renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;
       renderer.setRenderTarget(currentRenderTarget);
