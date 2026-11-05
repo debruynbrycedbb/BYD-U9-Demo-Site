@@ -104,6 +104,11 @@ function start() {
   spot.shadow.camera.near = 4; spot.shadow.camera.far = 12;
   scene.add(spot, spot.target);
 
+  /* ---------- soft fill on the rear-right wheel, only for the tyre close-up */
+  const wheelFill = new THREE.PointLight(0xdfe6ff, 0, 6, 2);
+  wheelFill.position.set(-2.6, 1.0, -2.4);
+  scene.add(wheelFill);
+
   /* ---------- wet floor */
   const floor = new WetFloor({ size: 70, resolutionScale: isSmall() ? 0.35 : 0.5 });
   scene.add(floor);
@@ -189,6 +194,7 @@ function start() {
     camera.updateProjectionMatrix();
 
     title.children.forEach((m) => { m.material.opacity = s.titleOpacity; m.visible = s.titleOpacity > 0.003; });
+    wheelFill.intensity = 7 * smooth(5.5, 3.2, s.dist);
   }
 
   /* ---------- title placement: keep it inside the view width on narrow screens */
