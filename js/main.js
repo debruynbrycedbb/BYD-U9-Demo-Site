@@ -64,6 +64,45 @@ window.addEventListener('scroll', () => { readScroll(); requestRender(); }, { pa
 window.addEventListener('resize', readScroll);
 readScroll();
 
+/* In-page links (menu, wordmark, skip link, "Back to the start").
+   The browser would land on the very top of a section, where its text hasn't faded in yet,
+   so land in the middle of the stretch where the camera is parked and the text is showing. */
+const TEXT_SPOT = { hero: 0, finale: 0.4, default: 0.29 };   // matches the fades in readScroll
+function chapterScrollY(chapter) {
+  const f = TEXT_SPOT[chapter.dataset.shot] ?? TEXT_SPOT.default;
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  return Math.min(max, Math.round(chapter.offsetTop + chapter.offsetHeight * f));
+}
+function goToChapter(id, behavior) {
+  const chapter = chapters.find((c) => c.id === id);
+  if (!chapter) return false;
+  window.scrollTo({ top: chapterScrollY(chapter), behavior });
+  if (behavior === 'instant') { readScroll(); requestRender(); }   // don't wait for a scroll event
+  if (chapter.tabIndex < 0) chapter.tabIndex = -1;
+  chapter.focus({ preventScroll: true });            // keyboard and screen-reader users continue from here
+  return true;
+}
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const id = a.getAttribute('href').slice(1);
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (goToChapter(id, reduce ? 'instant' : 'smooth')) {
+    e.preventDefault();
+    history.pushState(null, '', `#${id}`);
+  }
+});
+// Arriving with a link like …/#battery, the back/forward buttons, or a typed hash.
+// The browser's own jump to the anchor runs first, so correct it just after.
+const fixHashLanding = () => setTimeout(() => goToChapter(location.hash.slice(1) || 'top', 'instant'), 0);
+window.addEventListener('popstate', fixHashLanding);
+window.addEventListener('hashchange', fixHashLanding);
+if (location.hash) {
+  history.scrollRestoration = 'manual';
+  fixHashLanding();
+  window.addEventListener('load', fixHashLanding, { once: true });
+}
+
 /* ------------------------------------------------------------------ renderer */
 let renderer;
 try {

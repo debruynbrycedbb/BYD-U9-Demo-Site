@@ -23,8 +23,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { background: var(--black); scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+html { background: var(--black); }
 body {
   margin: 0;
   background: var(--black);
@@ -107,6 +106,7 @@ a { color: inherit; }
 /* ---------------------------------------------------------------- chapters */
 main { position: relative; z-index: 10; }
 .chapter { position: relative; height: 170vh; }
+.chapter:focus { outline: none; }
 .chapter--hero { height: 150vh; }
 .chapter--finale { height: 140vh; }
 .panel {
