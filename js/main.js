@@ -13,6 +13,7 @@ import { SHOTS, shotForAspect } from './shots.js';
 
 let requestRenderImpl = () => {};
 const TITLE_Y = 1.6, TITLE_Z = -3.8;
+const HORIZON = 0x1f2127;   // backdrop glow colour; the floor fades into it
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const stageEl = document.querySelector('.stage');
 const canvas = document.getElementById('scene');
@@ -78,23 +79,24 @@ function start() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isSmall() ? 1.5 : 1.75));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.2;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
-  scene.fog = new THREE.FogExp2(0x000000, 0.03);
+  scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
   const camera = new THREE.PerspectiveCamera(23, window.innerWidth / window.innerHeight, 0.1, 120);
   camera.layers.enable(2);
 
   /* ---------- reflections on the car: a dark studio with a softbox and light strips */
   scene.environment = buildStudioEnvironment(renderer);
-  scene.environmentIntensity = 1.0;
+  scene.environmentIntensity = 1.35;
 
   /* ---------- overhead spot */
-  const spot = new THREE.SpotLight(0xfff6ee, 750, 0, THREE.MathUtils.degToRad(19), 0.75, 2);
+  // kept low: in a glossy clear coat a strong point light reads as a hard glare
+  const spot = new THREE.SpotLight(0xfff6ee, 260, 0, THREE.MathUtils.degToRad(22), 0.85, 2);
   spot.position.set(0, 9, 0.4);
   spot.target.position.set(0, 0, 0);
   spot.castShadow = true;
@@ -104,13 +106,25 @@ function start() {
   spot.shadow.camera.near = 4; spot.shadow.camera.far = 12;
   scene.add(spot, spot.target);
 
+  /* ---------- soft fill so the car reads clearly from every angle */
+  scene.add(new THREE.HemisphereLight(0xb9c2d6, 0x0a0a0c, 0.9));
+  // key light that travels with the camera (up and to the left of it), no shadows
+  const camKey = new THREE.DirectionalLight(0xffffff, 1.1);
+  camKey.position.set(-6, 7, 4);
+  camKey.target.position.set(0, 0, -10);
+  camera.add(camKey, camKey.target);
+  scene.add(camera);
+
+  /* ---------- dim backdrop: lifts the horizon behind the car so its silhouette stands out */
+  scene.add(buildBackdrop());
+
   /* ---------- soft fill on the rear-right wheel, only for the tyre close-up */
   const wheelFill = new THREE.PointLight(0xdfe6ff, 0, 6, 2);
   wheelFill.position.set(-2.6, 1.0, -2.4);
   scene.add(wheelFill);
 
   /* ---------- wet floor */
-  const floor = new WetFloor({ size: 70, resolutionScale: isSmall() ? 0.35 : 0.5 });
+  const floor = new WetFloor({ size: 70, resolutionScale: isSmall() ? 0.35 : 0.5, horizon: HORIZON });
   scene.add(floor);
 
   /* ---------- contact shadow under the car */
@@ -132,7 +146,7 @@ function start() {
   /* ---------- post: gentle bloom on the DRLs and hot highlights */
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.35, 0.45, 8.0);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.4, 8.0);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
@@ -287,18 +301,30 @@ function buildStudioEnvironment(renderer) {
   env.background = new THREE.Color(0x000000);
   const panel = (w, h, intensity, color = 0xffffff) =>
     new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide }));
+  // soft grey surround: gives the metallic paint a red base from every angle instead of black
+  const wallGeo = new THREE.CylinderGeometry(11, 11, 12, 48, 1, true);
+  const wallCols = [];
+  const pos = wallGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const t = THREE.MathUtils.clamp((pos.getY(i) + 6) / 12, 0, 1);
+    const v = THREE.MathUtils.lerp(0.22, 0.04, t);
+    wallCols.push(v, v, v * 1.05);
+  }
+  wallGeo.setAttribute('color', new THREE.Float32BufferAttribute(wallCols, 3));
+  const wall = new THREE.Mesh(wallGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide }));
+  wall.position.y = 5; env.add(wall);
   // big softbox above
-  const top = panel(1.6, 6, 1.5); top.rotation.x = Math.PI / 2; top.position.set(0, 6, -0.6); env.add(top);
+  const top = panel(2.2, 6, 2.2); top.rotation.x = Math.PI / 2; top.position.set(0, 6, -0.6); env.add(top);
   // ring of tall strips at a distance (gives long vertical highlights from every angle)
   for (let i = 0; i < 10; i++) {
     const a = (i / 10) * Math.PI * 2 + 0.2;
-    const s = panel(0.7, 3.4, 0.55, 0xdfe6ff);
+    const s = panel(0.9, 3.6, 1.4, 0xdfe6ff);
     s.position.set(Math.sin(a) * 9, 2.2, Math.cos(a) * 9);
     s.lookAt(0, 2.2, 0);
     env.add(s);
   }
   // faint floor bounce
-  const fl = panel(40, 40, 0.025); fl.rotation.x = -Math.PI / 2; env.add(fl);
+  const fl = panel(40, 40, 0.06); fl.rotation.x = -Math.PI / 2; env.add(fl);
   const pm = new THREE.PMREMGenerator(renderer);
   const tex = pm.fromScene(env, 0.02).texture;
   pm.dispose();
@@ -329,6 +355,28 @@ function makeLightsGlow(m) {
   m.needsUpdate = true;
 }
 
+function buildBackdrop() {
+  const geo = new THREE.CylinderGeometry(34, 34, 30, 64, 1, true);
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { uLow: { value: new THREE.Color(HORIZON) }, uHigh: { value: new THREE.Color(0x000000) } },
+    vertexShader: /* glsl */`varying float vY; void main(){ vY = (modelMatrix * vec4(position,1.0)).y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    fragmentShader: /* glsl */`
+      uniform vec3 uLow, uHigh; varying float vY;
+      void main(){
+        float t = smoothstep(0.0, 11.0, vY);          // glow sits on the horizon, fades upward
+        vec3 c = mix(uLow, uHigh, pow(t, 0.6));
+        gl_FragColor = vec4(c, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.y = 15 - 0.5;
+  m.renderOrder = -1;
+  return m;
+}
+
 function buildContactShadow() {
   const cv = document.createElement('canvas'); cv.width = 128; cv.height = 128;
   const cx = cv.getContext('2d');
@@ -348,7 +396,7 @@ function buildBeam() {
   geo.translate(0, -h / 2, 0);
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false,
-    uniforms: { uColor: { value: new THREE.Color(0xfff4ea) }, uStrength: { value: 0.11 } },
+    uniforms: { uColor: { value: new THREE.Color(0xfff4ea) }, uStrength: { value: 0.15 } },
     vertexShader: /* glsl */`
       varying vec3 vN; varying vec3 vView; varying float vY;
       void main(){
@@ -382,7 +430,7 @@ function buildBeam() {
 
 function buildReflectionBars() {
   const g = new THREE.Group();
-  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe8ecff).multiplyScalar(0.5), fog: false, side: THREE.DoubleSide });
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xe8ecff).multiplyScalar(0.28), fog: false, side: THREE.DoubleSide });
   const geo = new THREE.PlaneGeometry(0.55, 6);
   const n = 22;
   for (let i = 0; i < n; i++) {

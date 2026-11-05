@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 
 export class WetFloor extends THREE.Mesh {
-  constructor({ size = 70, resolutionScale = 0.5 } = {}) {
+  constructor({ size = 70, resolutionScale = 0.5, horizon = 0x000000 } = {}) {
     const geo = new THREE.PlaneGeometry(size, size);
     geo.rotateX(-Math.PI / 2);
 
@@ -16,8 +16,9 @@ export class WetFloor extends THREE.Mesh {
         tReflect: { value: rt.texture },
         textureMatrix: { value: textureMatrix },
         uSpotPos: { value: new THREE.Vector2(0, 0.4) },
-        uFadeNear: { value: 9.0 },
-        uFadeFar: { value: 30.0 },
+        uFadeNear: { value: 12.0 },
+        uFadeFar: { value: 33.0 },
+        uHorizon: { value: new THREE.Color(horizon) },
       },
       vertexShader: /* glsl */`
         uniform mat4 textureMatrix;
@@ -29,7 +30,7 @@ export class WetFloor extends THREE.Mesh {
           gl_Position = projectionMatrix * viewMatrix * wp;
         }`,
       fragmentShader: /* glsl */`
-        uniform sampler2D tReflect; uniform vec2 uSpotPos; uniform float uFadeNear, uFadeFar;
+        uniform sampler2D tReflect; uniform vec2 uSpotPos; uniform float uFadeNear, uFadeFar; uniform vec3 uHorizon;
         varying vec4 vUvR; varying vec3 vWorld;
 
         float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
@@ -66,11 +67,11 @@ export class WetFloor extends THREE.Mesh {
 
           // spot pool on the floor with a little concrete texture
           float pool = exp(-pow(length(p - uSpotPos)/2.9, 2.0));
-          vec3 base = vec3(0.008) + vec3(1.0,0.97,0.93) * pool * (0.02 + 0.03*grain) * (1.0 - 0.5*wet);
+          vec3 base = vec3(0.02) + vec3(1.0,0.97,0.93) * pool * (0.06 + 0.06*grain) * (1.0 - 0.4*wet);
 
           vec3 col = base + refl * reflAmt;
           float d = length(vWorld.xz);
-          col *= 1.0 - smoothstep(uFadeNear, uFadeFar, d);
+          col = mix(col, uHorizon, smoothstep(uFadeNear, uFadeFar, d));
           gl_FragColor = vec4(col, 1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
